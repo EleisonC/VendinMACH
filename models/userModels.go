@@ -33,24 +33,53 @@ func CreateNewUser(newUser *UserModel) error {
 	return nil
 }
 
-func UpdateUser(userUpdate *UserModel, userId string) (int64, error) {
+func UpdateUser(userUpdate *EditUser, userId string) (error) {
+	config.ConnectDB()
 	stmt, err := config.DB.Prepare("UPDATE users SET username=?, role=? WHERE id=?")
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	defer stmt.Close()
 	res, err := stmt.Exec(userUpdate.Username, userUpdate.Role, userId)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	count, err := res.RowsAffected()
-    if err != nil {
-        return 0, err
+    if err != nil || count == 0{
+        return err
     }
 
-	return count, nil
+	return nil
+}
+
+func UpdateUserPass(userId string, newPass string) error  {
+	config.ConnectDB()
+	stmt, err := config.DB.Prepare("UPDATE users SET password=? WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	newPass = string(hashPassword)
+
+	res, err := stmt.Exec(newPass, userId)
+	if err != nil {
+		return err
+	}
+
+	count, err := res.RowsAffected()
+    if err != nil || count == 0{
+        return err
+    }
+
+	return nil
 }
 
 func FindUserByUsername(username string, user *UserModeldb) (error) {
@@ -62,8 +91,8 @@ func FindUserByUsername(username string, user *UserModeldb) (error) {
 	return nil
 }
 
-func FindUserById(userId string) error {
-	var user UserModeldb
+func FindUserById(userId string, user *UserModeldb) error {
+	config.ConnectDB()
 	err := config.DB.QueryRow("SELECT * FROM users WHERE id=?", userId).Scan(&user)
 	if err != nil {
         return err

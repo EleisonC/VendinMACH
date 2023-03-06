@@ -9,6 +9,7 @@ import (
 	"github.com/EleisonC/vending-machine/models"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/gorilla/mux"
 )
 
 var validate = validator.New()
@@ -76,9 +77,7 @@ func LoginUserHn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	// GenerateJWT
-
 	tokenSt, err := helpers.GenerateJWT(user.Role)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Invalid Password Or Username", err)
@@ -92,6 +91,119 @@ func LoginUserHn(w http.ResponseWriter, r *http.Request) {
 	res, err := json.Marshal(loginRes)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Issue Authenticating", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "pkglication/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
+func EditUserDataHn(w http.ResponseWriter, r *http.Request) {
+	var editUser models.EditUser
+	params := mux.Vars(r)
+	userId := params["userId"]
+	if err := json.NewDecoder(r.Body).Decode(&editUser); err != nil {
+		helpers.VenErrorHandler(w, "User Not Updated", err)
+		return
+	}
+
+	if err := validate.Struct(&editUser); err != nil {
+		helpers.VenErrorHandler(w, "User Not Updated Step 2", err)
+		return
+	}
+	
+	if err := models.UpdateUser(&editUser, userId); err != nil {
+		helpers.VenErrorHandler(w, "Something Happened During Update", err)
+		return
+	}
+
+	postRes := models.PosMessageRes{
+		Message: "User created",
+	}
+
+	res, err := json.Marshal(postRes)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Somthing Happened. But User Is Updated", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "pkglication/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
+func GetUserByUserNameHn(w http.ResponseWriter, r *http.Request) {
+	var user models.UserModeldb
+	type Username struct {
+		Username string `json:"username"`
+	}
+	var username Username
+	if err := json.NewDecoder(r.Body).Decode(&username); err != nil {
+		helpers.VenErrorHandler(w, "User Not Found", err)
+		fmt.Println(err.Error())
+		return
+	}
+
+	err := models.FindUserByUsername(username.Username, &user)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Issue Getting User", err)
+		return
+	}
+
+	res, err := json.Marshal(user)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Issue Getting User", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "pkglication/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
+func ChangePasswordHn(w http.ResponseWriter, r *http.Request) {
+	var passChange models.PasswordChange
+	var user models.UserModeldb
+	params := mux.Vars(r)
+	userId := params["userId"]
+
+	if err := json.NewDecoder(r.Body).Decode(&passChange); err != nil {
+		helpers.VenErrorHandler(w, "Failed to change password", err)
+		return
+	}
+
+	if err := validate.Struct(&passChange); err != nil {
+		helpers.VenErrorHandler(w, "The passwords are faulty", err)
+		return
+	}
+
+	err := models.FindUserById(userId, &user)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Failed Login Attempt", err)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword(user.Password, []byte(passChange.OldPassword))
+	if err != nil {
+		helpers.VenErrorHandler(w, "Invalid Password", err)
+		return
+	}
+
+
+	err = models.UpdateUserPass(userId, passChange.NewPassword)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Invalid Password", err)
+		return
+	}
+
+	postRes := models.PosMessageRes{
+		Message: "User pass changed",
+	}
+
+	res, err := json.Marshal(postRes)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Somthing Happened. But User Is Create", err)
 		return
 	}
 

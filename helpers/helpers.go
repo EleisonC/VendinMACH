@@ -52,4 +52,45 @@ func LoadEnvVal(key string) string {
 	return os.Getenv(key)
 }
 
+func VerifyJWT(endPoint func( w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header["Token"] != nil {
+			token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token)(interface{}, error){
+				_, ok := token.Method.(*jwt.SigningMethodHMAC)
+				if !ok {
+					w.WriteHeader(http.StatusUnauthorized)
+					_, err := w.Write([]byte("You are Unauthorized"))
+					if err != nil {
+						return nil, err
+					}
+				}
+				return []byte("work"), nil
+			})
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				_, err := w.Write([]byte("You are Unauthorized"))
+				if err != nil {
+					return
+				}
+			}
+
+			if token.Valid {
+				endPoint(w, r)
+			} else {
+				w.WriteHeader(http.StatusUnauthorized)
+				_, err = w.Write([]byte("You are Unauthorized"))
+				if err != nil {
+					return
+				}
+			}
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, err := w.Write([]byte("You are Unauthorized"))
+			if err != nil {
+				return
+			}
+		}
+	})
+	
+}
 
