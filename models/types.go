@@ -9,9 +9,20 @@ type UserModel struct{
 	Role string	`json:"role" validate:"required"`
 }
 
+type EditUser struct {
+	Username	string `json:"username" validate:"required"`
+	Role	string `json:"role" validate:"required"`
+}
+
 type UserLogIn struct {
 	Username string `json:"username" validate:"required"`
 	Password string	`json:"password" validate:"required"`
+}
+
+type PasswordChange struct {
+	OldPassword	string	`json:"oldpassword" validate:"required"`
+	NewPassword	string	`json:"newpassword" validate:"required,min=8"`
+	ConfirmNewPassword	string	`json:"confirmpassword" validate:"required,eqfield=NewPassword"`
 }
 
 type UserModeldb struct{
