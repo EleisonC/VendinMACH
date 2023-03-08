@@ -13,5 +13,6 @@ var RegisterScheduleRoutes = func(router *mux.Router) {
 	router.HandleFunc("/edituser/{userId}", helpers.VerifyJWT(handlers.EditUserDataHn)).Methods("PUT")
 	router.HandleFunc("/getuser", helpers.VerifyJWT(handlers.GetUserByUserNameHn)).Methods("POST")
 	router.HandleFunc("/changeuserpass/{userId}", helpers.VerifyJWT(handlers.ChangePasswordHn)).Methods("PUT")
+	router.HandleFunc("/depositcoin", helpers.VerifyJWT(handlers.DepositCoinsHn)).Methods("POST")
 }
 
