@@ -54,6 +54,27 @@ func UpdateUser(userUpdate *EditUser, userId string) (error) {
 	return nil
 }
 
+func DepositCoin(userId string, depositValue int) (error) {
+	config.ConnectDB()
+	stmt, err := config.DB.Prepare("UPDATE users SET deposit=?WHERE id=?")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+	res, err := stmt.Exec(depositValue, userId)
+	if err != nil {
+		return err
+	}
+
+	count, err := res.RowsAffected()
+    if err != nil || count == 0{
+        return err
+    }
+
+	return nil
+}
+
 func UpdateUserPass(userId string, newPass string) error  {
 	config.ConnectDB()
 	stmt, err := config.DB.Prepare("UPDATE users SET password=? WHERE id=?")

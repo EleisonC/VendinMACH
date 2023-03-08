@@ -5,13 +5,17 @@ type UserModel struct{
 	Id string `json:"id"`
 	Username string `json:"username" validate:"required,min=3,max=12"`
 	Password string	`json:"password" validate:"required,min=5"`
-	Deposit int		`json:"deposit"`
+	Deposit int		`json:"deposit" validate:"required,oneof=5 10 20 50 100"`
 	Role string	`json:"role" validate:"required"`
 }
 
 type EditUser struct {
 	Username	string `json:"username" validate:"required"`
 	Role	string `json:"role" validate:"required"`
+}
+
+type Deposit struct {
+	Deposit int `json:"deposit" validate:"required,oneof=5 10 20 50 100"`
 }
 
 type UserLogIn struct {

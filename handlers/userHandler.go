@@ -78,7 +78,7 @@ func LoginUserHn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GenerateJWT
-	tokenSt, err := helpers.GenerateJWT(user.Role, user.Username)
+	tokenSt, err := helpers.GenerateJWT(user.Role, user.Username, user.Id)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Invalid Password Or Username", err)
 		return
@@ -110,6 +110,24 @@ func EditUserDataHn(w http.ResponseWriter, r *http.Request) {
 
 	if err := validate.Struct(&editUser); err != nil {
 		helpers.VenErrorHandler(w, "User Not Updated Step 2", err)
+		return
+	}
+
+	// verify claims
+	usernameST, err := helpers.ExtractClaims(w, r)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Claims Issue", err)
+		return
+	}
+
+	if usernameST["userId"] != userId {
+		errMessage := models.PosMessageRes{
+			Message: "Not Authorized",
+		}
+		res, _ := json.Marshal(errMessage)
+		w.Header().Set("Content-Type", "pkglication/json")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write(res)
 		return
 	}
 	
@@ -151,7 +169,8 @@ func GetUserByUserNameHn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usernameST, err := helpers.ExtractClaims(w, r, username.Username)
+	// extract claims
+	usernameST, err := helpers.ExtractClaims(w, r)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Claims Issue", err)
 		return
@@ -196,6 +215,24 @@ func ChangePasswordHn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//verify claims
+	usernameST, err := helpers.ExtractClaims(w, r)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Claims Issue", err)
+		return
+	}
+
+	if usernameST["username"] != user.Username {
+		errMessage := models.PosMessageRes{
+			Message: "Not Authorized",
+		}
+		res, _ := json.Marshal(errMessage)
+		w.Header().Set("Content-Type", "pkglication/json")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write(res)
+		return
+	}
+
 	err = bcrypt.CompareHashAndPassword(user.Password, []byte(passChange.OldPassword))
 	if err != nil {
 		helpers.VenErrorHandler(w, "Invalid Password", err)
@@ -211,6 +248,56 @@ func ChangePasswordHn(w http.ResponseWriter, r *http.Request) {
 
 	postRes := models.PosMessageRes{
 		Message: "User pass changed",
+	}
+
+	res, err := json.Marshal(postRes)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Somthing Happened. But User Is Create", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "pkglication/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
+func DepositCoinsHn(w http.ResponseWriter, r *http.Request) {
+	var depositValue *models.Deposit
+	var user models.UserModeldb
+	if err := json.NewDecoder(r.Body).Decode(&depositValue); err != nil {
+		helpers.VenErrorHandler(w, "Not Accepted Coin It should [20, 10, 5, 50, 100]", err)
+	}
+
+	if err := validate.Struct(&depositValue); err != nil {
+		helpers.VenErrorHandler(w, "Not Accepted Coin It should [20, 10, 5, 50, 100]", err)
+	}
+
+
+	// Extract and verify claims
+	usernameST, err := helpers.ExtractClaims(w, r)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Claims Issue", err)
+		return
+	}
+	userId := usernameST["userId"].(string)
+
+	err = models.FindUserById(userId, &user)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Failed Login Attempt", err)
+		return
+	}
+
+	// new deposit value oldValue + depositValue.Deposit
+	newDepositValue := depositValue.Deposit + user.Deposit
+
+	err = models.DepositCoin(userId, newDepositValue)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Failed to deposit cash", err)
+		return
+	}
+
+	postRes := models.PosMessageRes{
+		Message: "Deposit Made",
 	}
 
 	res, err := json.Marshal(postRes)

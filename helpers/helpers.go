@@ -26,7 +26,7 @@ func VenErrorHandler(w http.ResponseWriter, errMes string, err error) {
 	w.Write(res)
 }
 
-func GenerateJWT(role string, username string) (string, error) {
+func GenerateJWT(role string, username string, userId string) (string, error) {
 	signMeth := jwt.SigningMethodHS256
 	secretKeyUse := "work"
 	// token := jwt.New(signMeth)
@@ -35,6 +35,7 @@ func GenerateJWT(role string, username string) (string, error) {
 	claims["exp"] = time.Now().Add(90 * time.Minute).Unix()
 	claims["user"] = role
 	claims["username"] = username
+	claims["userId"] = userId
 
 	
 	token := jwt.NewWithClaims(signMeth, claims)
@@ -96,7 +97,7 @@ func VerifyJWT(endPoint func( w http.ResponseWriter, r *http.Request)) http.Hand
 	
 }
 
-func ExtractClaims(w http.ResponseWriter, r *http.Request, etclaim string) (map[string]interface{}, error) {
+func ExtractClaims(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
 	if r.Header["Token"] != nil {
 		tokenSt := r.Header["Token"][0]
 		token, err := jwt.Parse(tokenSt, func(token *jwt.Token)(interface{}, error){
