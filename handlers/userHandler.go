@@ -78,7 +78,7 @@ func LoginUserHn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GenerateJWT
-	tokenSt, err := helpers.GenerateJWT(user.Role)
+	tokenSt, err := helpers.GenerateJWT(user.Role, user.Username)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Invalid Password Or Username", err)
 		return
@@ -148,6 +148,18 @@ func GetUserByUserNameHn(w http.ResponseWriter, r *http.Request) {
 	err := models.FindUserByUsername(username.Username, &user)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Issue Getting User", err)
+		return
+	}
+
+	usernameST, err := helpers.ExtractClaims(w, r, username.Username)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Claims Issue", err)
+		return
+	}
+
+	if usernameST["username"] != user.Username {
+		w.Header().Set("Content-Type", "pkglication/json")
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 

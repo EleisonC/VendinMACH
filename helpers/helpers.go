@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -25,14 +26,15 @@ func VenErrorHandler(w http.ResponseWriter, errMes string, err error) {
 	w.Write(res)
 }
 
-func GenerateJWT(role string) (string, error) {
+func GenerateJWT(role string, username string) (string, error) {
 	signMeth := jwt.SigningMethodHS256
 	secretKeyUse := "work"
 	// token := jwt.New(signMeth)
 
 	claims := jwt.MapClaims{}
 	claims["exp"] = time.Now().Add(90 * time.Minute).Unix()
-	claims["username"] = role
+	claims["user"] = role
+	claims["username"] = username
 
 	
 	token := jwt.NewWithClaims(signMeth, claims)
@@ -92,5 +94,26 @@ func VerifyJWT(endPoint func( w http.ResponseWriter, r *http.Request)) http.Hand
 		}
 	})
 	
+}
+
+func ExtractClaims(w http.ResponseWriter, r *http.Request, etclaim string) (map[string]interface{}, error) {
+	if r.Header["Token"] != nil {
+		tokenSt := r.Header["Token"][0]
+		token, err := jwt.Parse(tokenSt, func(token *jwt.Token)(interface{}, error){
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("there's an error with the signing method")
+			}
+			return []byte("work"), nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if ok && token.Valid {
+			return claims, nil
+		}
+		return nil, nil
+	}
+	return nil, nil
 }
 
