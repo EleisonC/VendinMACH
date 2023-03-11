@@ -17,6 +17,10 @@ func init(){
 	if err != nil {
 		log.Fatal(err)
 	}
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS productsTable ( id INTEGER PRIMARY KEY AUTOINCREMENT, productname TEXT, sellerid TEXT REFERENCES usertable(id), cost INTEGER, amountavailable INTEGER)")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// m, err := migrate.New("./migrations", "./vending.db")
     // if err != nil {
     //     log.Fatal(err)

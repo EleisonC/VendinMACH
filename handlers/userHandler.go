@@ -310,3 +310,52 @@ func DepositCoinsHn(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
 }
+
+func ResetDepositHn(w http.ResponseWriter, r *http.Request) {
+	// Extract and verify claims
+	usernameST, err := helpers.ExtractClaims(w, r)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Claims Issue", err)
+		return
+	}
+	userId := usernameST["userId"].(string)
+	if userRole := usernameST["role"].(string); userRole != "buyer" {
+		postRes := models.PosMessageRes{
+			Message: "Not Enough Rights To Make This Request",
+		}
+
+		res, err := json.Marshal(postRes)
+		if err != nil {
+			helpers.VenErrorHandler(w, "Somthing Happened. But User Is Create", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "pkglication/json")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write(res)
+
+		return
+	}
+
+
+	newDepositValue := 0
+	err = models.DepositCoin(userId, newDepositValue)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Failed to deposit cash", err)
+		return
+	}
+
+	postRes := models.PosMessageRes{
+		Message: "Deposit Reset",
+	}
+
+	res, err := json.Marshal(postRes)
+	if err != nil {
+		helpers.VenErrorHandler(w, "Somthing Happened. But User Is Create", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "pkglication/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
