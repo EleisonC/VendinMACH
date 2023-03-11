@@ -1,0 +1,10 @@
+CREATE TABLE productsTable (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    productname TEXT,
+    sellerid TEXT FOREIGN KEY REFERENCES usertable(id),
+    cost INTEGER,
+    amountavailable INTEGER
+);
+
+ALTER TABLE productsTable
+ADD FOREIGN KEY (sellerid) REFERENCES usertable(id);

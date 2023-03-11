@@ -9,6 +9,20 @@ type UserModel struct{
 	Role string	`json:"role" validate:"required"`
 }
 
+type ProductModel struct{
+	Id string `json:id`
+	ProductName string 	`json:productname`
+	SellerID string	`json:sellerid`
+	Cost int	`json:cost`
+	AmountAvailable int	`json:amountavailable`
+}
+
+type ProductModelUp struct{
+	ProductName string 	`json:productname`
+	Cost int	`json:cost`
+	AmountAvailable int	`json:amountavailable`
+}
+
 type EditUser struct {
 	Username	string `json:"username" validate:"required"`
 	Role	string `json:"role" validate:"required"`

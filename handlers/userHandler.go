@@ -8,13 +8,13 @@ import (
 	"github.com/EleisonC/vending-machine/helpers"
 	"github.com/EleisonC/vending-machine/models"
 	"github.com/go-playground/validator/v10"
-	"golang.org/x/crypto/bcrypt"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var validate = validator.New()
 
-func CreateNewUserHn(w http.ResponseWriter, r *http.Request){
+func CreateNewUserHn(w http.ResponseWriter, r *http.Request) {
 	var user models.UserModel
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		helpers.VenErrorHandler(w, "User Not Created", err)
@@ -85,7 +85,7 @@ func LoginUserHn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	loginRes := models.TokenRes{
-		Message: "User Authenticated",
+		Message:     "User Authenticated",
 		TokenString: tokenSt,
 	}
 	res, err := json.Marshal(loginRes)
@@ -130,14 +130,14 @@ func EditUserDataHn(w http.ResponseWriter, r *http.Request) {
 		w.Write(res)
 		return
 	}
-	
+
 	if err := models.UpdateUser(&editUser, userId); err != nil {
 		helpers.VenErrorHandler(w, "Something Happened During Update", err)
 		return
 	}
 
 	postRes := models.PosMessageRes{
-		Message: "User created",
+		Message: "User updated",
 	}
 
 	res, err := json.Marshal(postRes)
@@ -239,7 +239,6 @@ func ChangePasswordHn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	err = models.UpdateUserPass(userId, passChange.NewPassword)
 	if err != nil {
 		helpers.VenErrorHandler(w, "Invalid Password", err)
@@ -272,7 +271,6 @@ func DepositCoinsHn(w http.ResponseWriter, r *http.Request) {
 		helpers.VenErrorHandler(w, "Not Accepted Coin It should [20, 10, 5, 50, 100]", err)
 	}
 
-
 	// Extract and verify claims
 	usernameST, err := helpers.ExtractClaims(w, r)
 	if err != nil {
@@ -280,6 +278,23 @@ func DepositCoinsHn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userId := usernameST["userId"].(string)
+	if userRole := usernameST["role"].(string); userRole != "buyer" {
+		postRes := models.PosMessageRes{
+			Message: "Not Enough Rights To Make This Request",
+		}
+
+		res, err := json.Marshal(postRes)
+		if err != nil {
+			helpers.VenErrorHandler(w, "Somthing Happened. But User Is Create", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "pkglication/json")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write(res)
+
+		return
+	}
 
 	err = models.FindUserById(userId, &user)
 	if err != nil {
